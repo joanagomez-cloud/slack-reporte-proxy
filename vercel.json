@@ -1,9 +1,4 @@
 {
-  "functions": {
-    "API/slack.js": {
-      "runtime": "node"
-    }
-  },
   "rewrites": [
     { "source": "/api/slack", "destination": "/API/slack" }
   ]
