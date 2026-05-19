@@ -28,6 +28,8 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") { res.status(200).end(); return; }
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
+const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
+
   const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
   const SLACK_WEBHOOK = process.env.SLACK_WEBHOOK;
 
@@ -36,7 +38,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { plataforma, cliente, fecha, transcripcion } = req.body;
+const { plataforma, cliente, fecha, transcripcion } = body;
     if (!transcripcion) return res.status(400).json({ error: "No transcripcion v2" });
 
     // 1. Analizar con Anthropic
