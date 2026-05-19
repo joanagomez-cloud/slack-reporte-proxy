@@ -37,7 +37,7 @@ export default async function handler(req, res) {
 
   try {
     const { plataforma, cliente, fecha, transcripcion } = req.body;
-    if (!transcripcion) return res.status(400).json({ error: "No transcripcion provided" });
+    if (!transcripcion) return res.status(400).json({ error: "No transcripcion v2" });
 
     // 1. Analizar con Anthropic
     const aiRes = await fetch("https://api.anthropic.com/v1/messages", {
