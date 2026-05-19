@@ -13,7 +13,11 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const SLACK_WEBHOOK = "https://hooks.slack.com/services/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";
+  const SLACK_WEBHOOK = process.env.SLACK_WEBHOOK;
+
+  if (!SLACK_WEBHOOK) {
+    return res.status(500).json({ error: "Webhook not configured" });
+  }
 
   try {
     const { text } = req.body;
