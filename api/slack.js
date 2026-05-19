@@ -1,6 +1,4 @@
-export const config = { api: { bodyParser: true } };
-
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS, GET");
   res.setHeader("Access-Control-Allow-Headers", "*");
@@ -16,10 +14,14 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { plataforma, cliente, fecha, transcripcion } = req.body;
+    const body = req.body || {};
+    const transcripcion = body.transcripcion;
+    const plataforma = body.plataforma || "[PLATAFORMA]";
+    const cliente = body.cliente || "[CLIENTE]";
+    const fecha = body.fecha || "[FECHA]";
 
     if (!transcripcion) {
-      return res.status(400).json({ error: "No transcripcion provided", received: JSON.stringify(req.body) });
+      return res.status(400).json({ error: "No transcripcion provided", body: JSON.stringify(body) });
     }
 
     const SYSTEM_PROMPT = `Eres un asistente que analiza transcripciones de reuniones relacionadas con sistemas de seguridad GPS. Detecta y reporta: 1. PROBLEMAS DE INSTALACIÓN, 2. REVISIÓN DE UNIDAD (incluye placa), 3. QUEJAS EXTERNAS. Formato: REUNIÓN – [PLATAFORMA] – [CLIENTE] – [FECHA] seguido de puntos con viñetas y al final 🔖 Categorías. Solo responde SIN_PROBLEMAS si no hay ningún problema.`;
@@ -35,10 +37,7 @@ export default async function handler(req, res) {
         model: "claude-sonnet-4-20250514",
         max_tokens: 1000,
         system: SYSTEM_PROMPT,
-        messages: [{
-          role: "user",
-          content: `Plataforma: ${plataforma || "[PLATAFORMA]"}\nCliente: ${cliente || "[CLIENTE]"}\nFecha: ${fecha || "[FECHA]"}\n\nTranscripción:\n${transcripcion}`
-        }]
+        messages: [{ role: "user", content: `Plataforma: ${plataforma}\nCliente: ${cliente}\nFecha: ${fecha}\n\nTranscripción:\n${transcripcion}` }]
       })
     });
 
@@ -58,11 +57,11 @@ export default async function handler(req, res) {
     if (slackRes.ok) {
       return res.status(200).json({ status: "enviado", reporte: reportText });
     } else {
-      const slackBody = await slackRes.text();
-      return res.status(500).json({ error: slackBody });
+      const slackError = await slackRes.text();
+      return res.status(500).json({ error: slackError });
     }
 
   } catch (e) {
     return res.status(500).json({ error: e.message });
   }
-}
+};
