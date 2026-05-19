@@ -1,3 +1,5 @@
+import bodyParser from "body-parser";
+
 const SYSTEM_PROMPT = `Eres un asistente que analiza transcripciones de reuniones o sesiones relacionadas con sistemas de seguridad GPS y rastreo vehicular.
 
 Tu tarea es identificar y reportar CUALQUIERA de estas situaciones:
@@ -28,7 +30,10 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") { res.status(200).end(); return; }
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
+  // Parse body
+  await new Promise((resolve, reject) =>
+    bodyParser.json()(req, res, (err) => err ? reject(err) : resolve())
+  );
 
   const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
   const SLACK_WEBHOOK = process.env.SLACK_WEBHOOK;
@@ -38,10 +43,9 @@ const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
   }
 
   try {
-const { plataforma, cliente, fecha, transcripcion } = body;
-    if (!transcripcion) return res.status(400).json({ error: "No transcripcion v2" });
+    const { plataforma, cliente, fecha, transcripcion } = req.body;
+    if (!transcripcion) return res.status(400).json({ error: "No transcripcion provided" });
 
-    // 1. Analizar con Anthropic
     const aiRes = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -67,7 +71,6 @@ const { plataforma, cliente, fecha, transcripcion } = body;
       return res.status(200).json({ status: "sin_problemas" });
     }
 
-    // 2. Enviar a Slack
     const slackRes = await fetch(SLACK_WEBHOOK, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
