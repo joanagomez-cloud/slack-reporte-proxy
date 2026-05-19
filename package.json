@@ -1,0 +1,7 @@
+{
+  "name": "slack-reporte-proxy",
+  "version": "1.0.0",
+  "dependencies": {
+    "body-parser": "^1.20.0"
+  }
+}
