@@ -14,14 +14,24 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const body = req.body || {};
+    // Leer body manualmente del stream
+    const rawBody = await new Promise((resolve, reject) => {
+      let data = "";
+      req.on("data", chunk => { data += chunk; });
+      req.on("end", () => resolve(data));
+      req.on("error", reject);
+    });
+
+    let body = {};
+    try { body = JSON.parse(rawBody); } catch(e) {}
+
     const transcripcion = body.transcripcion;
     const plataforma = body.plataforma || "[PLATAFORMA]";
     const cliente = body.cliente || "[CLIENTE]";
     const fecha = body.fecha || "[FECHA]";
 
     if (!transcripcion) {
-      return res.status(400).json({ error: "No transcripcion provided", body: JSON.stringify(body) });
+      return res.status(400).json({ error: "No transcripcion provided", raw: rawBody });
     }
 
     const SYSTEM_PROMPT = `Eres un asistente que analiza transcripciones de reuniones relacionadas con sistemas de seguridad GPS. Detecta y reporta: 1. PROBLEMAS DE INSTALACIÓN, 2. REVISIÓN DE UNIDAD (incluye placa), 3. QUEJAS EXTERNAS. Formato: REUNIÓN – [PLATAFORMA] – [CLIENTE] – [FECHA] seguido de puntos con viñetas y al final 🔖 Categorías. Solo responde SIN_PROBLEMAS si no hay ningún problema.`;
