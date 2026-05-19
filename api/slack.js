@@ -14,24 +14,27 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    // Leer body manualmente del stream
-    const rawBody = await new Promise((resolve, reject) => {
-      let data = "";
-      req.on("data", chunk => { data += chunk; });
-      req.on("end", () => resolve(data));
-      req.on("error", reject);
-    });
+    // Vercel parsea automáticamente — usar req.body directamente
+    let body = req.body;
+    
+    // Si llega como string, parsearlo
+    if (typeof body === "string") {
+      try { body = JSON.parse(body); } catch(e) { body = {}; }
+    }
 
-    let body = {};
-    try { body = JSON.parse(rawBody); } catch(e) {}
-
-    const transcripcion = body.transcripcion;
-    const plataforma = body.plataforma || "[PLATAFORMA]";
-    const cliente = body.cliente || "[CLIENTE]";
-    const fecha = body.fecha || "[FECHA]";
+    // Debug: devolver lo que recibimos
+    const transcripcion = body && body.transcripcion;
+    const plataforma = (body && body.plataforma) || "[PLATAFORMA]";
+    const cliente = (body && body.cliente) || "[CLIENTE]";
+    const fecha = (body && body.fecha) || "[FECHA]";
 
     if (!transcripcion) {
-      return res.status(400).json({ error: "No transcripcion provided", raw: rawBody });
+      return res.status(400).json({ 
+        error: "No transcripcion provided", 
+        bodyType: typeof body,
+        bodyKeys: body ? Object.keys(body) : [],
+        bodyRaw: JSON.stringify(body)
+      });
     }
 
     const SYSTEM_PROMPT = `Eres un asistente que analiza transcripciones de reuniones relacionadas con sistemas de seguridad GPS. Detecta y reporta: 1. PROBLEMAS DE INSTALACIÓN, 2. REVISIÓN DE UNIDAD (incluye placa), 3. QUEJAS EXTERNAS. Formato: REUNIÓN – [PLATAFORMA] – [CLIENTE] – [FECHA] seguido de puntos con viñetas y al final 🔖 Categorías. Solo responde SIN_PROBLEMAS si no hay ningún problema.`;
@@ -75,3 +78,5 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ error: e.message });
   }
 };
+
+module.exports.config = { api: { bodyParser: true } };
